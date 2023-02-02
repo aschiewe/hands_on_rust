@@ -5,12 +5,45 @@ pub struct MapBuilder {
     pub map: Map,
     pub rooms: Vec<Rect>,
     pub player_start: Point,
+    pub amulet_start: Point,
 }
 
+/// Builds a random map, sets position for player and amulet
 impl MapBuilder {
+    pub fn new(rng: &mut RandomNumberGenerator) -> Self {
+        let mut mb = MapBuilder {
+            map: Map::new(),
+            rooms: Vec::new(),
+            player_start: Point::zero(),
+            amulet_start: Point::zero(),
+        };
+        mb.fill(TileType::Wall);
+        mb.build_random_rooms(rng);
+        mb.build_corridors(rng);
+        mb.player_start = mb.rooms[0].center();
+        // determine the location of the amulet. Should be farthest from the player
+        let dijkstra_map = DijkstraMap::new(
+            SCREEN_WIDTH, 
+            SCREEN_HEIGHT, 
+            &vec![mb.map.point2d_to_index(mb.player_start)], 
+            &mb.map, 
+            1024.0);
+        const UNREACHABLE: &f32 = &f32::MAX;
+        mb.amulet_start = mb.map.index_to_point2d(
+            dijkstra_map.map
+                .iter()
+                .enumerate()
+                .filter(|(_,dist)| *dist < UNREACHABLE)
+                .max_by(|a,b| a.1.partial_cmp(b.1).unwrap())
+                .unwrap().0
+        );
+        mb
+    }
+
     fn fill(&mut self, tile: TileType) {
         self.map.tiles.iter_mut().for_each(|t| *t = tile);
     }
+
     fn build_random_rooms(&mut self, rng: &mut RandomNumberGenerator) {
         while self.rooms.len() < NUM_ROOMS {
             let room = Rect::with_size(
@@ -74,18 +107,5 @@ impl MapBuilder {
                 self.apply_horizontal_tunnel(prev.x, new.x, new.y);
             }
         }
-    }
-
-    pub fn new(rng: &mut RandomNumberGenerator) -> Self {
-        let mut mb = MapBuilder {
-            map: Map::new(),
-            rooms: Vec::new(),
-            player_start: Point::zero(),
-        };
-        mb.fill(TileType::Wall);
-        mb.build_random_rooms(rng);
-        mb.build_corridors(rng);
-        mb.player_start = mb.rooms[0].center();
-        mb
     }
 }
