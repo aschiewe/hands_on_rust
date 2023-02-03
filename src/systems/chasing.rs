@@ -41,5 +41,4 @@ pub fn chasing(#[resource] map: &Map, ecs: &SubWorld, commands: &mut CommandBuff
             }
         };
     });
-    
 }
