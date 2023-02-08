@@ -1,10 +1,17 @@
 use crate::prelude::*;
 const NUM_ROOMS: usize = 20;
+mod empty;
+use empty::EmptyArchitect;
+
+trait MapArchitect {
+    fn new(&mut self, rng: &mut RandomNumberGenerator) -> MapBuilder;
+}
 
 
 pub struct MapBuilder {
     pub map: Map,
     pub rooms: Vec<Rect>,
+    pub monster_spawns: Vec<Point>,
     pub player_start: Point,
     pub amulet_start: Point,
 }
@@ -12,18 +19,8 @@ pub struct MapBuilder {
 /// Builds a random map, sets position for player and amulet
 impl MapBuilder {
     pub fn new(rng: &mut RandomNumberGenerator) -> Self {
-        let mut mb = MapBuilder {
-            map: Map::new(),
-            rooms: Vec::new(),
-            player_start: Point::zero(),
-            amulet_start: Point::zero(),
-        };
-        mb.fill(TileType::Wall);
-        mb.build_random_rooms(rng);
-        mb.build_corridors(rng);
-        mb.player_start = mb.rooms[0].center();
-        mb.amulet_start = mb.find_most_distant();
-        mb
+        let mut architect = EmptyArchitect{};
+        architect.new(rng)
     }
 
     /// Find the location farthest away from the player
